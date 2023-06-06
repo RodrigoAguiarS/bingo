@@ -17,10 +17,11 @@ import javax.persistence.*;
 public class NumeroSorteado {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_numero_sorteado")
     private Long id;
     private int numero;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sorteio_id")
+    @JoinColumn(name = "id_sorteio")
     @EqualsAndHashCode.Exclude
     private Sorteio sorteio;
 }
