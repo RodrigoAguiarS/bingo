@@ -1,11 +1,16 @@
 package com.rodrigo.bingo.service;
 
+
 import com.rodrigo.bingo.domain.Cartela;
 import com.rodrigo.bingo.domain.Usuario;
+import com.rodrigo.bingo.domain.dto.CartelaDTO;
 import com.rodrigo.bingo.repository.CartelaRepository;
+import com.rodrigo.bingo.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,25 +22,45 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CartelaService {
     private final CartelaRepository cartelaRepository;
-    public Cartela gerarNovaCartela(Usuario usuario) {
-        Set<Integer> numerosSorteados = new HashSet<>();
-        Random random = new Random();
 
-        while (numerosSorteados.size() < 5) {
-            int numero = random.nextInt(10) + 1;
-            numerosSorteados.add(numero);
-        }
+    private final UsuarioRepository usuarioRepository;
 
-        List<Integer> numerosSorteadosList = new ArrayList<>(numerosSorteados);
+    public CartelaDTO gerarNovaCartela(Usuario usuario) {
+
+        int quantidadeDeNumeros = 5;
+        BigDecimal valorDaCartela = new BigDecimal("10.00");
+
+        List<Integer> numerosDaCartela = gerarNumerosCartela(quantidadeDeNumeros);
 
         String numeroSerie = UUID.randomUUID().toString();
-
         Cartela cartela = new Cartela();
         cartela.setNumeroSerie(numeroSerie);
         cartela.setUsuario(usuario);
-        cartela.setNumeros(numerosSorteadosList);
+        cartela.setValor(valorDaCartela);
+        cartela.setNumeros(numerosDaCartela);
 
-        return cartelaRepository.save(cartela);
+        usuarioRepository.save(usuario);
+        cartelaRepository.save(cartela);
+
+        CartelaDTO cartelaDTO = new CartelaDTO();
+        cartelaDTO.setId(cartela.getId());
+        cartelaDTO.setNumeroSerie(cartela.getNumeroSerie());
+        cartelaDTO.setNumeros(cartela.getNumeros());
+
+        return cartelaDTO;
+    }
+    private List<Integer> gerarNumerosCartela(int quantidade) {
+        List<Integer> numerosCartela = new ArrayList<>();
+        Set<Integer> numerosExistentes = new HashSet<>();
+        Random random = new Random();
+        while (numerosCartela.size() < quantidade) {
+            int numero = random.nextInt(10) + 1;
+
+            if (numerosExistentes.add(numero)) {
+                numerosCartela.add(numero);
+            }
+        }
+
+        return numerosCartela;
     }
 }
-
