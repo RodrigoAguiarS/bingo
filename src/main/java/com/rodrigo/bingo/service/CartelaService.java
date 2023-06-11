@@ -28,12 +28,12 @@ public class CartelaService {
     public CartelaDTO gerarNovaCartela(Usuario usuario) {
 
         int quantidadeDeNumeros = 5;
-        BigDecimal valorDaCartela = new BigDecimal("10.00");
+        var valorDaCartela = new BigDecimal("10.00");
 
-        List<Integer> numerosDaCartela = gerarNumerosCartela(quantidadeDeNumeros);
+        var numerosDaCartela = gerarNumerosCartela(quantidadeDeNumeros);
 
-        String numeroSerie = UUID.randomUUID().toString();
-        Cartela cartela = new Cartela();
+        var numeroSerie = UUID.randomUUID().toString();
+        var cartela = new Cartela();
         cartela.setNumeroSerie(numeroSerie);
         cartela.setUsuario(usuario);
         cartela.setValor(valorDaCartela);
@@ -42,7 +42,7 @@ public class CartelaService {
         usuarioRepository.save(usuario);
         cartelaRepository.save(cartela);
 
-        CartelaDTO cartelaDTO = new CartelaDTO();
+        var cartelaDTO = new CartelaDTO();
         cartelaDTO.setId(cartela.getId());
         cartelaDTO.setNumeroSerie(cartela.getNumeroSerie());
         cartelaDTO.setNumeros(cartela.getNumeros());
@@ -52,7 +52,7 @@ public class CartelaService {
     private List<Integer> gerarNumerosCartela(int quantidade) {
         List<Integer> numerosCartela = new ArrayList<>();
         Set<Integer> numerosExistentes = new HashSet<>();
-        Random random = new Random();
+        var random = new Random();
         while (numerosCartela.size() < quantidade) {
             int numero = random.nextInt(10) + 1;
 

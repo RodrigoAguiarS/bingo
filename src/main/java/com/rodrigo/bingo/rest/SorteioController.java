@@ -1,15 +1,12 @@
 package com.rodrigo.bingo.rest;
 
+import com.rodrigo.bingo.arq.util.ValidatorUtil;
+import com.rodrigo.bingo.domain.dto.DetalhesSorteioDTO;
 import com.rodrigo.bingo.service.SorteioService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api")
@@ -21,5 +18,15 @@ public class SorteioController {
     public ResponseEntity<String> realizarSorteio() {
         sorteioService.realizarSorteio();
         return ResponseEntity.ok("Sorteio realizado com sucesso");
+    }
+
+    @GetMapping("/{id}/detalhes")
+    public ResponseEntity<DetalhesSorteioDTO> detalharSorteio(@PathVariable("id") Long sorteioId) {
+        var sorteio = sorteioService.findById(sorteioId);
+        if (ValidatorUtil.isEmpty(sorteio)) {
+            return ResponseEntity.notFound().build();
+        }
+        var detalhesSorteio = sorteioService.detalharSorteio(sorteioId);
+        return ResponseEntity.ok(detalhesSorteio);
     }
 }

@@ -32,5 +32,7 @@ public class Cartela {
     @CollectionTable(name = "cartela_numeros", joinColumns = @JoinColumn(name = "id_cartela"))
     @Column(name = "numero")
     private List<Integer> numeros;
+    @Column(name = "usada")
+    private boolean usada;
 
 }

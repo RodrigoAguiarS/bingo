@@ -1,6 +1,8 @@
 package com.rodrigo.bingo.arq.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class ValidatorUtil {
@@ -66,5 +68,19 @@ public class ValidatorUtil {
 
     public static boolean isValidarEmail(String email) {
         return email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
+    }
+
+    private List<String> erros;
+
+    public void adicionarErro(String erro) {
+        erros.add(erro);
+    }
+
+    public boolean possuiErros() {
+        return !erros.isEmpty();
+    }
+
+    public List<String> getErros() {
+        return erros;
     }
 }

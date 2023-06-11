@@ -1,5 +1,6 @@
 package com.rodrigo.bingo.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 @Data
 @Entity
+@JsonIgnoreProperties("numerosSorteados")
 @Table(name = "sorteio")
 public class Sorteio {
     @Id
@@ -25,4 +27,6 @@ public class Sorteio {
 
     @OneToMany(mappedBy = "sorteio", cascade = CascadeType.ALL)
     private Set<NumeroSorteado> numerosSorteados = new HashSet<>();
+    @Column(name = "realizado")
+    private Boolean realizado = false;
 }

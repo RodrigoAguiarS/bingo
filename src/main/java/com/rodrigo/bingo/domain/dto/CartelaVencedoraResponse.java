@@ -9,4 +9,5 @@ import java.util.List;
 public class CartelaVencedoraResponse {
     private Cartela cartela;
     private List<Integer> numerosSorteados;
+
 }

@@ -6,12 +6,14 @@ import com.rodrigo.bingo.domain.CartelaVencedora;
 import com.rodrigo.bingo.domain.NumeroSorteado;
 import com.rodrigo.bingo.domain.Sorteio;
 import com.rodrigo.bingo.domain.dto.CartelaVencedoraResponse;
+import com.rodrigo.bingo.domain.dto.DetalhesSorteioDTO;
 import com.rodrigo.bingo.repository.CartelaRepository;
 import com.rodrigo.bingo.repository.CartelaVencedoraRepository;
 import com.rodrigo.bingo.repository.NumeroSorteadoRepository;
 import com.rodrigo.bingo.repository.SorteioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.webjars.NotFoundException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,8 +35,8 @@ public class SorteioService {
     }
 
     private BigDecimal calcularValorTotalCartelas() {
-        List<Cartela> cartelas = cartelaRepository.findAll();
-        BigDecimal valorTotal = BigDecimal.ZERO;
+        var cartelas = cartelaRepository.findByUsadaFalse();
+        var valorTotal = BigDecimal.ZERO;
 
         for (Cartela cartela : cartelas) {
             valorTotal = valorTotal.add(cartela.getValor());
@@ -45,20 +47,20 @@ public class SorteioService {
 
 
     public Sorteio realizarSorteio() {
-        LocalDateTime dataHoraSorteio = LocalDateTime.now();
-        Sorteio sorteio = new Sorteio();
+        var dataHoraSorteio = LocalDateTime.now();
+        var sorteio = new Sorteio();
         sorteio.setDataHora(dataHoraSorteio);
 
-        BigDecimal valorTotalCartelas = calcularValorTotalCartelas();
-        BigDecimal valorPremio = valorTotalCartelas.divide(new BigDecimal(2));
+        var valorTotalCartelas = calcularValorTotalCartelas();
+        var valorPremio = valorTotalCartelas.divide(new BigDecimal(2));
         sorteio.setValorPremio(valorPremio);
 
         sorteio = sorteioRepository.save(sorteio);
 
-        List<Integer> numerosSorteados = gerarNumerosSorteados();
+        var numerosSorteados = gerarNumerosSorteados();
 
         for (Integer numero : numerosSorteados) {
-            NumeroSorteado numeroSorteado = new NumeroSorteado();
+            var numeroSorteado = new NumeroSorteado();
             numeroSorteado.setNumero(numero);
             numeroSorteado.setSorteio(sorteio);
             numeroSorteadoRepository.save(numeroSorteado);
@@ -77,13 +79,18 @@ public class SorteioService {
     }
 
     public List<CartelaVencedoraResponse> verificarCartelasSorteadas(Sorteio sorteio) {
-        List<Cartela> cartelas = cartelaRepository.findAll();
-        List<NumeroSorteado> numerosSorteados = new ArrayList<>(sorteio.getNumerosSorteados());
+        var cartelas = cartelaRepository.findByUsadaFalse();
+
+        if(ValidatorUtil.isEmpty(cartelas)) {
+            throw new RuntimeException("Não foram encontradas cartelas para esse sorteio");
+        }
+
+        var numerosSorteados = new ArrayList<>(sorteio.getNumerosSorteados());
 
         List<CartelaVencedoraResponse> cartelasVencedoras = new ArrayList<>();
 
         for (Cartela cartela : cartelas) {
-            List<Integer> numerosCartela = new ArrayList<>(cartela.getNumeros());
+            var numerosCartela = new ArrayList<>(cartela.getNumeros());
             int numerosSorteadosIndex = 0;
 
             while (numerosSorteadosIndex < numerosSorteados.size() && ValidatorUtil.isNotEmpty(numerosCartela)) {
@@ -101,17 +108,20 @@ public class SorteioService {
             }
         }
 
-        List<CartelaVencedoraResponse> cartelasVerificadasVencedoras = ValidaCartelasVencedoras(cartelasVencedoras);
+        var cartelasVerificadasVencedoras = ValidaCartelasVencedoras(cartelasVencedoras);
         salvarCartelasVencedoras(sorteio, cartelasVerificadasVencedoras);
+
+        sorteio.setRealizado(true);
+        marcarTodasCartelasComoUsadas(cartelas);
 
         return cartelasVerificadasVencedoras;
     }
 
     private CartelaVencedoraResponse criarCartelaVencedoraResponse(Cartela cartela, List<NumeroSorteado> numerosSorteados, int numerosSorteadosIndex) {
-        CartelaVencedoraResponse response = new CartelaVencedoraResponse();
+        var response = new CartelaVencedoraResponse();
         response.setCartela(cartela);
 
-        List<Integer> numerosSorteadosVencedora = obterNumerosSorteadosVencedora(numerosSorteados, numerosSorteadosIndex);
+        var numerosSorteadosVencedora = obterNumerosSorteadosVencedora(numerosSorteados, numerosSorteadosIndex);
         response.setNumerosSorteados(numerosSorteadosVencedora);
 
         return response;
@@ -124,7 +134,7 @@ public class SorteioService {
                 .collect(Collectors.toList());
     }
 
-    private List<CartelaVencedoraResponse> ValidaCartelasVencedoras(List<CartelaVencedoraResponse> cartelasVencedoras) {
+    List<CartelaVencedoraResponse> ValidaCartelasVencedoras(List<CartelaVencedoraResponse> cartelasVencedoras) {
         int menorIndex = cartelasVencedoras.stream()
                 .mapToInt(cartelaVencedora -> cartelaVencedora.getNumerosSorteados().size())
                 .min()
@@ -135,7 +145,7 @@ public class SorteioService {
                 .collect(Collectors.toList());
     }
 
-    public void salvarCartelasVencedoras(Sorteio sorteio, List<CartelaVencedoraResponse> cartelasVencedoras) {
+    private void salvarCartelasVencedoras(Sorteio sorteio, List<CartelaVencedoraResponse> cartelasVencedoras) {
         for (CartelaVencedoraResponse cartelaVencedoraResponse : cartelasVencedoras) {
             CartelaVencedora cartelaVencedora = new CartelaVencedora();
             cartelaVencedora.setSorteio(sorteio);
@@ -144,6 +154,47 @@ public class SorteioService {
 
             cartelaVencedoraRepository.save(cartelaVencedora);
         }
+    }
+
+    public DetalhesSorteioDTO detalharSorteio(Long sorteioId) {
+        var sorteio = sorteioRepository.findById(sorteioId)
+                .orElseThrow(() -> new NotFoundException("Sorteio não encontrado"));
+
+        var detalhesSorteio = new DetalhesSorteioDTO();
+        detalhesSorteio.setSorteio(sorteio);
+
+        var numerosSorteados = new ArrayList<>(sorteio.getNumerosSorteados());
+        var numerosPremiados = numerosSorteados.stream()
+                .map(NumeroSorteado::getNumero)
+                .collect(Collectors.toList());
+        detalhesSorteio.setNumerosPremiados(numerosPremiados);
+
+        var cartelasPremiadas = cartelaVencedoraRepository.findCartelasPremiadas(sorteio);
+        var cartelasPremiadasDTO = cartelasPremiadas.stream()
+                .map(cartela -> criarCartelaVencedoraResponse(cartela, numerosSorteados))
+                .collect(Collectors.toList());
+        detalhesSorteio.setCartelasPremiadas(cartelasPremiadasDTO);
+
+        return detalhesSorteio;
+    }
+
+    private CartelaVencedoraResponse criarCartelaVencedoraResponse(Cartela cartela, List<NumeroSorteado> numerosSorteados) {
+        var cartelaVencedoraResponse = new CartelaVencedoraResponse();
+        cartelaVencedoraResponse.setCartela(cartela);
+
+        var numerosPremiados = numerosSorteados.stream()
+                .filter(numeroSorteado -> cartela.getNumeros().contains(numeroSorteado.getNumero()))
+                .map(NumeroSorteado::getNumero)
+                .collect(Collectors.toList());
+        cartelaVencedoraResponse.setNumerosSorteados(numerosPremiados);
+
+        return cartelaVencedoraResponse;
+    }
+    public void marcarTodasCartelasComoUsadas(List<Cartela> cartelas) {
+        for (Cartela cartela : cartelas) {
+            cartela.setUsada(true);
+        }
+        cartelaRepository.saveAll(cartelas);
     }
 }
 
